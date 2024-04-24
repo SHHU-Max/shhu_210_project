@@ -16,3 +16,8 @@ pub fn end() -> Vertex{
         return ran_end_two;
     } 
 }
+
+pub fn sample() -> Vertex{
+    let ran_sample = rand::thread_rng().gen_range(0..1971281) as usize;
+    return ran_sample;
+}
