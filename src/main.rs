@@ -80,37 +80,93 @@ fn main() {
     let graph = Graph::create_directed(n, &road_edges);
 
     //these are dead ends in the road
-    let mut end_points: Vec<usize> = Vec::new();
-    for (i, j) in graph.outedges.iter().enumerate(){
-        if j.len() == 0{
-            end_points.push(i);
-        }
-    }
+    // let mut end_points: Vec<usize> = Vec::new();
+    // for (i, j) in graph.outedges.iter().enumerate(){
+    //     if j.len() == 0{
+    //         end_points.push(i);
+    //     }
+    // }
 
     // breadth first search
     // to be used for average shortest path later
-    let start = random::start();
-    let mut distance: Vec<Option<usize>> = vec![None;graph.n];
-    distance[start] = Some(0);
-    let mut queue: VecDeque<Vertex> = VecDeque::new();
-    queue.push_back(start);
+    // let start = random::start();
+    // let mut distance: Vec<Option<usize>> = vec![None;graph.n];
+    // distance[start] = Some(0);
+    // let mut queue: VecDeque<Vertex> = VecDeque::new();
+    // queue.push_back(start);
 
-    while let Some(v) = queue.pop_front() {
-        for i in graph.outedges[v].iter(){
-                if let None = distance[*i] {
-                    distance[*i] = Some(distance[v].unwrap()+1);
-                    queue.push_back(*i);
-            }   
-        }
+    // while let Some(v) = queue.pop_front() {
+    //     for i in graph.outedges[v].iter(){
+    //             if let None = distance[*i] {
+    //                 distance[*i] = Some(distance[v].unwrap()+1);
+    //                 queue.push_back(*i);
+    //         }   
+    //     }
+    // }
+
+    // for v in 0..graph.n{
+    //     // if it is not a dead end
+    //     // since dead ends have none for distance
+    //     if distance[v] != None{
+    //         println!("distance from vertex {} to {} is {}", start, v, distance[v].unwrap());
+    //     }
+    // }
+
+    // random sampling
+    let mut ran_sample: Vec<usize> = Vec::new();
+    let sample_count = 2000;
+    for _ in 0..sample_count{
+        let sample = random::sample();
+        ran_sample.push(sample);
     }
 
-    for v in 0..graph.n{
-        // if it is not a dead end
-        // since dead ends have none for distance
-        if distance[v] != None{
-            println!("distance from vertex {} to {} is {}", start, v, distance[v].unwrap());
+    // average distances via breadth first search
+    // each vertex in random sample average distance to every other vertex in the graph
+    // sample_average_dis holds the format of 
+    // vertex/node, its average distance to all other vertex/node in the graph
+    let mut sample_average_dis: Vec<(usize, usize)> = Vec::new();
+    for vtx in ran_sample{
+        let start = vtx;
+        let mut distance: Vec<Option<usize>> = vec![None;graph.n];
+        distance[start] = Some(0);
+        let mut queue: VecDeque<Vertex> = VecDeque::new();
+        queue.push_back(start);
+    
+        while let Some(v) = queue.pop_front() {
+            for i in graph.outedges[v].iter(){
+                    if let None = distance[*i] {
+                        distance[*i] = Some(distance[v].unwrap()+1);
+                        queue.push_back(*i);
+                }   
+            }
         }
+
+        // I take a random node's all distances to every other node on the graph
+        // sum those distances then divide by a count
+        // push that node and its average distance to every other node into a vector.
+        let mut total_dis:usize = 0;
+        let mut temp_count: usize = 0;
+        for v in 0..graph.n{
+            temp_count += 1;
+            if distance[v] != None{
+                total_dis += distance[v].unwrap();
+            }
+        }
+        let aver_dis = total_dis/temp_count;
+        //println!("Vertex {} 's average distance to every other vertex is {}", start, aver_dis);
+        // closeness centrality
+        sample_average_dis.push((start, aver_dis));
     }
+    
+    // the 2000 sample is randomly selected thus represents the total population
+    let mut average_travel_distance: usize = 0;
+    for (_ss, jj) in sample_average_dis{
+        average_travel_distance += jj;
+    }
+    let total_aver_travel = average_travel_distance/sample_count;
+    println!
+    ("The overall average travel distance in CA from / 
+    random location A to random location B is {:?}", total_aver_travel);
     
 }
 
