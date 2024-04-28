@@ -97,6 +97,7 @@ fn main() {
         let mut ran_sample: Vec<usize> = Vec::new();
         
         // random sampling
+        // the 2000 sample is randomly selected thus represents the total population
         let sample_count = 2000;
         for _ in 0..sample_count{
             let sample = random::sample();
@@ -136,12 +137,11 @@ fn main() {
                 }
             }
             let aver_dis = total_dis/temp_count;
-            //println!("Vertex {} 's average distance to every other vertex is {}", start, aver_dis);
-            // closeness centrality
+            // println!("Vertex {} 's average distance to every other vertex is {}", start, aver_dis);
+            // Also closeness centrality
             sample_average_dis.push((start, aver_dis));
         }
     
-        // the 2000 sample is randomly selected thus represents the total population
         let mut average_travel_distance: usize = 0;
         for (_ss, jj) in sample_average_dis{
             average_travel_distance += jj;
@@ -152,7 +152,7 @@ fn main() {
         random location A to random location B is {:?}", total_aver_travel);
     }
 
-        // centrality
+    // centrality
     // finding top 50 node with highest degree centrality
     // higher = more importance, as it could be downtown area
     fn centrality(){
@@ -210,13 +210,92 @@ fn main() {
     centrality();
     
 }
+    // first test is going to see if average_distance() gives a distance 
+    // within range of all possible average distances.
+    // takes almost 2 minutes to run
     #[test]
     fn project_test(){
+        // after running average_distance() 10 times
+        // I got different values each time, since it is random sampling
+        // the average was roughly 305
+        // I am not repeating the function here to save time.
+        let rough_total_aver_dis:usize = 305;
+
+        let mut road_edges = reader::read_txt("roadNetCAProject.txt");
+        road_edges.sort();
+    
+        let n = node_count("roadNetCAProject.txt");
+    
+        let graph = Graph::create_directed(n, &road_edges);
+        let mut ran_sample: Vec<usize> = Vec::new();
         
+        let sample_count = 2000;
+        for _ in 0..sample_count{
+            let sample = random::sample();
+            ran_sample.push(sample);
+        }
+
+        let mut sample_average_dis: Vec<usize> = Vec::new();
+        for vtx in ran_sample{
+            let start = vtx;
+            let mut distance: Vec<Option<usize>> = vec![None;graph.n];
+            distance[start] = Some(0);
+            let mut queue: VecDeque<Vertex> = VecDeque::new();
+            queue.push_back(start);
+    
+            while let Some(v) = queue.pop_front() {
+                for i in graph.outedges[v].iter(){
+                    if let None = distance[*i] {
+                        distance[*i] = Some(distance[v].unwrap()+1);
+                        queue.push_back(*i);
+                    }   
+                }
+            }
+
+            let mut total_dis:usize = 0;
+            let mut temp_count: usize = 0;
+            for v in 0..graph.n{
+                temp_count += 1;
+                if distance[v] != None{
+                    total_dis += distance[v].unwrap();
+                }
+            }
+            let aver_dis = total_dis/temp_count;
+            sample_average_dis.push(aver_dis);
+        }
+        let max = sample_average_dis.iter().max().unwrap();
+        let min = sample_average_dis.iter().min().unwrap();
+
+        if rough_total_aver_dis <= *max && rough_total_aver_dis >= *min{
+            assert_eq!(1, 1);
+        } else {
+            assert_eq!(1, 2);
+        }
+
     }
 
+    // second test tests to see if the highest centrality degree
+    // from centrality() matches the max value in a vector of all number of edges in the graph
+    // centrality gives 12 has highest degree
     #[test]
     fn project_test_two(){
-        
+        let most_central:usize = 12;
+
+        let mut road_edges = reader::read_txt("roadNetCAProject.txt");
+        road_edges.sort();
+
+        // node_count should be equal to 1971280+1=1971281
+        let n = node_count("roadNetCAProject.txt");
+
+        let graph = Graph::create_directed(n, &road_edges);
+        let mut centrality_measure: Vec<usize> = Vec::new();
+        for (node, edges) in graph.outedges.iter().enumerate(){
+            //println!("{:?}, {:?}", node, edges.len());
+            centrality_measure.push(edges.len());
+        }
+        //note unwrap() references the variable
+        // I need to dereference with * or match the reference with &
+        let max_degree = centrality_measure.iter().max().unwrap();
+        assert_eq!(max_degree, &most_central);
     }
 
