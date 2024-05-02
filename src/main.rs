@@ -1,6 +1,5 @@
 // Shaotai Hu DS210 Project
-// Does California city planning create a logical 
-// and efficient road network?
+// Is California road network design logical and effective?
 // Note:
 // The data is directed
 
@@ -61,12 +60,6 @@ fn node_count(path: &str) -> usize {
     return count+1;
 }
 fn main() {
-// git commands
-// git init
-// git add .
-// git commit -m "first"
-// git remote add origin link
-// git push origin master
 
     // using reader to read data into "roadnetwork"
     let mut road_edges = reader::read_txt("roadNetCAProject.txt");
@@ -77,8 +70,8 @@ fn main() {
 
     let graph = Graph::create_directed(n, &road_edges);
 
-    //these are dead ends in the road
-    // not really used, but good to have
+    // these are dead ends in the road
+    // not really used, but good to have, since they pretty much have 0 edges and can mess up iteration
     let mut end_points: Vec<usize> = Vec::new();
     for (i, j) in graph.outedges.iter().enumerate(){
         if j.len() == 0{
@@ -86,18 +79,18 @@ fn main() {
         }
     }
 
-    fn average_distances(){
+    // finds the overall average distance from a vertex to every other vertex in the CA road network graph
+    fn average_distances() -> usize{
         let mut road_edges = reader::read_txt("roadNetCAProject.txt");
         road_edges.sort();
     
-        // node_count should be equal to 1971280+1=1971281
         let n = node_count("roadNetCAProject.txt");
     
         let graph = Graph::create_directed(n, &road_edges);
         let mut ran_sample: Vec<usize> = Vec::new();
         
         // random sampling
-        // the 2000 sample is randomly selected thus represents the total population
+        // the 2000 sample is randomly selected thus represents the population
         let sample_count = 2000;
         for _ in 0..sample_count{
             let sample = random::sample();
@@ -105,9 +98,10 @@ fn main() {
         }
 
         // average distances via breadth first search
-        // each vertex in random sample average distance to every other vertex in the graph
-        // sample_average_dis holds the format of 
-        // vertex/node, its average distance to all other vertex/node in the graph
+        // each randomly selected vertex's average distance to every other vertex in the graph
+
+        // sample_average_dis vector holds the format of 
+        // (vertex, its average distance to every other vertex in the graph)
         let mut sample_average_dis: Vec<(usize, usize)> = Vec::new();
         for vtx in ran_sample{
             let start = vtx;
@@ -125,9 +119,9 @@ fn main() {
                 }
             }
 
-            // I take a random node's all distances to every other node on the graph
-            // sum those distances then divide by a count
-            // push that node and its average distance to every other node into a vector.
+            // I take the vertex's all distances to every other node on the graph
+            // sum the distances then divide by count
+            // push that node and its average distance to every other node into a vector for storage.
             let mut total_dis:usize = 0;
             let mut temp_count: usize = 0;
             for v in 0..graph.n{
@@ -138,7 +132,6 @@ fn main() {
             }
             let aver_dis = total_dis/temp_count;
             // println!("Vertex {} 's average distance to every other vertex is {}", start, aver_dis);
-            // Also closeness centrality
             sample_average_dis.push((start, aver_dis));
         }
     
@@ -148,35 +141,36 @@ fn main() {
         }
         let total_aver_travel = average_travel_distance/sample_count;
         println!
-        ("The overall average travel distance in CA from / 
-        random location A to random location B is {:?}", total_aver_travel);
+        ("The overall average distance from a node to every other node is {:?}", total_aver_travel);
+        total_aver_travel
     }
 
     // centrality
-    // finding top 50 node with highest degree centrality
-    // higher = more importance, as it could be downtown area
+    // finding top 50 nodes with highest degree
+    // higher degree = more importance, as the vertex can be a important downtown road intersection
+    // returns the percent of top 50 center nodes with average distance to every other node less than
+    // overall average distance to every other node from average_distance()
     fn centrality(){
-        // using reader to read data into "roadnetwork"
+        let total_average_dis: usize = 305;
+        let mut good_distance: f64 = 0.0;
         let mut road_edges = reader::read_txt("roadNetCAProject.txt");
         road_edges.sort();
 
-        // node_count should be equal to 1971280+1=1971281
         let n = node_count("roadNetCAProject.txt");
 
         let graph = Graph::create_directed(n, &road_edges);
         let mut centrality_measure: Vec<(usize, usize)> = Vec::new();
         for (node, edges) in graph.outedges.iter().enumerate(){
-            //println!("{:?}, {:?}", node, edges.len());
             centrality_measure.push((edges.len(), node));
         }
         centrality_measure.sort();
         centrality_measure.reverse();
     
-        let mut ccc = 0;
-        println!("Top 50 most degree centered nodes:");
+        let mut fifty = 0;
+        println!("Top 50 nodes with highest degree");
         for (xx, yy) in centrality_measure{
-            if ccc < 51{
-                ccc += 1;
+            if fifty < 51{
+                fifty += 1;
                 let start = yy;
                 let mut distance: Vec<Option<usize>> = vec![None;graph.n];
                 distance[start] = Some(0);
@@ -200,21 +194,57 @@ fn main() {
                     }
                 }
                 let aver_dis = total_dis/temp_count;
-                println!("degree: {:?}, node: {:?}, distance to every other node: {:?}", xx, yy, aver_dis);
+                if total_average_dis > aver_dis{
+                    good_distance += 1.0;
+                }
+                println!("degree: {:?}, node: {:?}, average distance to every other node: {:?}", xx, yy, aver_dis);
             }
         }
+        let percentage = good_distance/50.0*100.0;
+        println!("percent of top 50 center nodes that has lower /
+                 average distance than overall average distance is {:?} % ", percentage);
+    }
+
+    // a useful function that allows me to see the distance between individual nodes.
+    fn distance_between(str:usize, end:usize){
+        let mut road_edges = reader::read_txt("roadNetCAProject.txt");
+        road_edges.sort();
+
+        let n = node_count("roadNetCAProject.txt");
+
+        let graph = Graph::create_directed(n, &road_edges);
+        let start = str;
+        let mut distance: Vec<Option<usize>> = vec![None;graph.n];
+        distance[start] = Some(0);
+        let mut queue: VecDeque<Vertex> = VecDeque::new();
+        queue.push_back(start);
+    
+        while let Some(v) = queue.pop_front() {
+            for i in graph.outedges[v].iter(){
+                if let None = distance[*i] {
+                    distance[*i] = Some(distance[v].unwrap()+1);
+                    queue.push_back(*i);
+                }   
+            }
+        }
+    
+        let distance_between = distance[end].unwrap();
+        println!("{:?}", distance_between);
 
     }
+
     // average_distances() takes roughly 2 minutes to run
+    // use cargo --release
     average_distances();
     centrality();
     
 }
-    // first test is going to see if average_distance() gives a distance 
+    // 2 tests in total:
+    // test 1 is going to see if average_distance() gives a distance 
     // within range of all possible average distances.
     // takes almost 2 minutes to run
     #[test]
-    fn project_test(){
+    fn test_distance(){
         // after running average_distance() 10 times
         // I got different values each time, since it is random sampling
         // the average was roughly 305
@@ -274,27 +304,24 @@ fn main() {
 
     }
 
-    // second test tests to see if the highest centrality degree
+    // test 2 tests to see if the highest centrality degree
     // from centrality() matches the max value in a vector of all number of edges in the graph
     // centrality gives 12 has highest degree
     #[test]
-    fn project_test_two(){
+    fn test_centrality(){
         let most_central:usize = 12;
 
         let mut road_edges = reader::read_txt("roadNetCAProject.txt");
         road_edges.sort();
 
-        // node_count should be equal to 1971280+1=1971281
         let n = node_count("roadNetCAProject.txt");
 
         let graph = Graph::create_directed(n, &road_edges);
         let mut centrality_measure: Vec<usize> = Vec::new();
         for (node, edges) in graph.outedges.iter().enumerate(){
-            //println!("{:?}, {:?}", node, edges.len());
             centrality_measure.push(edges.len());
         }
-        //note unwrap() references the variable
-        // I need to dereference with * or match the reference with &
+
         let max_degree = centrality_measure.iter().max().unwrap();
         assert_eq!(max_degree, &most_central);
     }
